@@ -190,6 +190,80 @@ function getJobsFromSector(sectorId) {
     return sector.job_ids.filter(jobId => jobs[jobId]);
 }
 
+// Calculate similarity between two jobs based on salary, sector, and education
+function calculateJobSimilarity(job1, job2) {
+    let similarity = 0;
+
+    // Salary similarity (normalized to 0-1 based on % difference)
+    const salary1 = parseInt(job1.median_pay_annual) || 0;
+    const salary2 = parseInt(job2.median_pay_annual) || 0;
+    if (salary1 > 0 && salary2 > 0) {
+        const salaryDiff = Math.abs(salary1 - salary2);
+        const avgSalary = (salary1 + salary2) / 2;
+        const salarySimRatio = 1 - Math.min(salaryDiff / avgSalary, 1);
+        similarity += salarySimRatio * 0.4; // 40% weight
+    }
+
+    // Sector similarity (same sector = very similar)
+    if (job1.sector === job2.sector) {
+        similarity += 0.3; // 30% weight
+    }
+
+    // Education similarity
+    const edu1 = job1.entry_level_education || '';
+    const edu2 = job2.entry_level_education || '';
+    if (edu1 && edu2) {
+        if (edu1 === edu2) {
+            similarity += 0.3; // 30% weight
+        } else {
+            // Partial match for similar education levels
+            const eduLevels = ['High school', 'Associate', 'Bachelor', 'Master', 'Doctoral'];
+            const level1 = eduLevels.findIndex(e => edu1.includes(e));
+            const level2 = eduLevels.findIndex(e => edu2.includes(e));
+            if (level1 >= 0 && level2 >= 0) {
+                const levelDiff = Math.abs(level1 - level2);
+                similarity += (0.3 * (1 - levelDiff / eduLevels.length));
+            }
+        }
+    }
+
+    return similarity;
+}
+
+// Get most discriminative job pairs based on current Elo scores and similarity
+function getMostDiscriminativePairs(availablePairs, count = 10) {
+    // After user has made enough comparisons, prioritize similar jobs with close scores
+    if (totalComparisons < 20) {
+        // Early stage: show diverse comparisons
+        return availablePairs;
+    }
+
+    // Score each pair by how discriminative it would be
+    const scoredPairs = availablePairs.map(([id1, id2]) => {
+        const job1 = jobs[id1];
+        const job2 = jobs[id2];
+
+        // Calculate score difference (closer = more discriminative)
+        const scoreDiff = Math.abs((job1.score || 1000) - (job2.score || 1000));
+        const scoreProximity = 1 / (1 + scoreDiff / 100); // Normalize
+
+        // Calculate job similarity
+        const similarity = calculateJobSimilarity(job1, job2);
+
+        // Discriminative pairs are similar jobs with close scores
+        const discriminativeScore = (scoreProximity * 0.6) + (similarity * 0.4);
+
+        return {
+            pair: [id1, id2],
+            score: discriminativeScore
+        };
+    });
+
+    // Sort by discriminative score and return top candidates
+    scoredPairs.sort((a, b) => b.score - a.score);
+    return scoredPairs.slice(0, Math.min(count, scoredPairs.length)).map(sp => sp.pair);
+}
+
 // Show job comparison
 function showJobComparison() {
     if (!currentSectorId || !sectors[currentSectorId]) {
@@ -229,11 +303,10 @@ function showJobComparison() {
             return job1Sector === currentSectorId || job2Sector === currentSectorId;
         });
 
-        if (pairsWithCurrentSector.length > 0) {
-            pair = pairsWithCurrentSector[Math.floor(Math.random() * pairsWithCurrentSector.length)];
-        } else {
-            pair = availablePairs[Math.floor(Math.random() * availablePairs.length)];
-        }
+        // Use clustering to get most discriminative pairs
+        const pairsToUse = pairsWithCurrentSector.length > 0 ? pairsWithCurrentSector : availablePairs;
+        const discriminativePairs = getMostDiscriminativePairs(pairsToUse);
+        pair = discriminativePairs[Math.floor(Math.random() * discriminativePairs.length)];
     }
 
     const [id1, id2] = pair;
