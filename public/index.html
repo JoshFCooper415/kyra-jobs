@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Preference Finder</title>
+    <link rel="stylesheet" href="styles.css?v=3">
+</head>
+<body>
+    <!-- Sidebar -->
+    <aside id="sidebar">
+        <div class="sidebar-header">
+            <h2>Job Finder</h2>
+        </div>
+
+        <div class="progress-section">
+            <h3>Progress</h3>
+            <div class="stat-item">
+                <span class="stat-label">Today:</span>
+                <span class="stat-value"><span id="todayCount">0</span> / 25</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Total:</span>
+                <span class="stat-value" id="totalComparisons">0</span>
+            </div>
+        </div>
+
+        <button id="viewResultsBtn" class="sidebar-btn">View Results</button>
+        <div style="margin-top: auto;">
+            <button id="resetBtn" class="sidebar-btn secondary">Reset Progress</button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main id="mainContent">
+        <!-- Loading State -->
+        <div id="loadingState" class="state active">
+            <h2>Loading...</h2>
+            <p>Preparing your comparisons</p>
+        </div>
+
+        <!-- Comparison State -->
+        <div id="comparisonState" class="state">
+            <div class="comparison-header">
+                <h1 id="comparisonTitle">Which do you prefer?</h1>
+                <p id="comparisonSubtitle">Click on the option you like more</p>
+            </div>
+
+            <div class="comparison-cards">
+                <div class="card" id="card1" onclick="selectOption(1)">
+                    <h2 id="option1Title"></h2>
+                    <p id="option1Description"></p>
+                    <div id="option1Details" class="details"></div>
+                </div>
+
+                <div class="vs">VS</div>
+
+                <div class="card" id="card2" onclick="selectOption(2)">
+                    <h2 id="option2Title"></h2>
+                    <p id="option2Description"></p>
+                    <div id="option2Details" class="details"></div>
+                </div>
+            </div>
+
+            <button id="skipBtn" class="skip-btn">Skip this pair</button>
+        </div>
+
+        <!-- Results State -->
+        <div id="resultsState" class="state">
+            <div class="results-header">
+                <h1>Your Job Rankings</h1>
+                <p>Based on your comparisons</p>
+            </div>
+
+            <div id="resultsContainer"></div>
+
+            <div class="results-actions">
+                <button id="backToComparisonBtn" class="btn">Continue Comparing</button>
+                <button id="exportBtn" class="btn primary">Export to CSV</button>
+            </div>
+        </div>
+    </main>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
